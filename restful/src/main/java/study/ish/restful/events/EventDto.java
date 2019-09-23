@@ -1,19 +1,13 @@
 package study.ish.restful.events;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import study.ish.restful.accounts.Account;
 
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 
 @Builder
@@ -21,12 +15,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Getter
 @Setter
-@EqualsAndHashCode(of = "id")
-@Entity
-public class Event {
+public class EventDto {
 
-  @Id @GeneratedValue
-  private Integer id;
+  @NotBlank
   private String name;
   private String description;
   private LocalDateTime beginEnrollmentDateTime;
@@ -37,13 +28,5 @@ public class Event {
   private int basePrice; // (optional)
   private int maxPrice; // (optional)
   private int limitOfEnrollment;
-  private boolean offline;
-  private boolean free;
-
-  @Enumerated(EnumType.STRING)
-  private EventStatus eventStatus = EventStatus.DRAFT;
-
-
-//  private Account manager;
 
 }
