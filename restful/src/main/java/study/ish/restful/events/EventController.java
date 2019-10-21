@@ -6,8 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.hateoas.MediaTypes;
 
+import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.net.URI;
+
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
@@ -32,16 +35,43 @@ public class EventController {
 
   @PostMapping
   public ResponseEntity createEvent(@RequestBody @Valid  EventDto eventDto, Errors errors){
-//    URI uri = linkTo(methodOn(EventController.class).createEvent(null)).slash("{id}").toUri();
     eventValidator.validate(eventDto, errors);
-
     if(errors.hasErrors()){
-      return ResponseEntity.badRequest().body("error");
+      return ResponseEntity.badRequest().body(errors);
     }
 
     Event event =  modelMapper.map(eventDto, Event.class);
+    event.update();
+
     Event newEvent = eventRepository.save(event);
-    URI uri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
-    return ResponseEntity.created(uri).body(newEvent);
+
+    ControllerLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(newEvent.getId());
+    URI uri = selfLinkBuilder.toUri();
+
+    EventResource eventResource = new EventResource(newEvent);
+    eventResource.add(linkTo(EventController.class).withRel("query-events"));
+    eventResource.add(selfLinkBuilder.withRel("update-event"));
+
+    return ResponseEntity.created(uri).body(eventResource);
+  }
+
+  @PostMapping("/{id}")
+  public ResponseEntity updateEvent(@RequestBody @Valid  EventDto eventDto, Errors errors, @PathVariable("id")  Integer id){
+    eventValidator.validate(eventDto, errors);
+    if(errors.hasErrors()){
+      return ResponseEntity.badRequest().body(errors);
+    }
+
+    Event event = eventRepository.findById(id).orElseThrow();
+    event.setName(eventDto.getName());
+    eventRepository.save(event);
+
+    ControllerLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(event.getId());
+
+    EventResource eventResource = new EventResource(event);
+    eventResource.add(selfLinkBuilder.withSelfRel());
+    eventResource.add(linkTo(EventController.class).withRel("query-events"));
+
+    return ResponseEntity.ok().body(null);
   }
 }

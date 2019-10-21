@@ -41,9 +41,24 @@ public class Event {
   private boolean free;
 
   @Enumerated(EnumType.STRING)
+  @Builder.Default
   private EventStatus eventStatus = EventStatus.DRAFT;
 
 
 //  private Account manager;
+
+  public void update(){
+    if(this.basePrice==0 &&this.maxPrice==0){
+      this.free = true;
+    }else
+      this.free=false;
+
+    if(this.location!=null && !this.location.isBlank()){
+      this.offline=true;
+    }else{
+      this.offline=false;
+    }
+  }
+
 
 }
