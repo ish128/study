@@ -39,7 +39,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation group: 'org.modelmapper', name: 'modelmapper', version: '2.3.5'
 
-    runtimeOnly 'com.h2database:h2'
+    testImplementation 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
 
 
@@ -72,9 +72,4 @@ bootJar {
     }
 }
 
-buildDependents {
-    dependsOn asciidoctor
-    from ("${asciidoctor.outputDir}/html5") {
-        into 'static/docs'
-    }
-}
+
