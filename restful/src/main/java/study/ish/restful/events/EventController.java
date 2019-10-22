@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
@@ -51,6 +52,7 @@ public class EventController {
     EventResource eventResource = new EventResource(newEvent);
     eventResource.add(linkTo(EventController.class).withRel("query-events"));
     eventResource.add(selfLinkBuilder.withRel("update-event"));
+    eventResource.add(new Link("/docs/index.html#resources-events-create").withRel("profile"));
 
     return ResponseEntity.created(uri).body(eventResource);
   }
@@ -62,7 +64,7 @@ public class EventController {
       return ResponseEntity.badRequest().body(errors);
     }
 
-    Event event = eventRepository.findById(id).orElseThrow();
+    Event event = eventRepository.findById(id).orElseThrow(()-> new RuntimeException());
     event.setName(eventDto.getName());
     eventRepository.save(event);
 

@@ -86,11 +86,13 @@ public class EventControllerSpringMvcTest {
         .andExpect(jsonPath("offline").value(true))
         .andExpect(jsonPath("free").value(false))
         .andExpect(jsonPath("_links.self").exists())
+        .andExpect(jsonPath("_links.profile").exists())
         .andExpect(jsonPath("_links.query-events").exists())
         .andExpect(jsonPath("_links.update-event").exists())
         .andDo(document("create-event",
             links(
                 linkWithRel("self").description("link to self"),
+                linkWithRel("profile").description("link to profile"),
                 linkWithRel("query-events").description("link to query events"),
                 linkWithRel("update-event").description("link to update event")
                 ),
@@ -119,6 +121,7 @@ public class EventControllerSpringMvcTest {
                 fieldWithPath("free").description("free"),
                 fieldWithPath("eventStatus").description("eventStatus"),
                 fieldWithPath("_links.self.href").description("self"),
+                fieldWithPath("_links.profile.href").description("profile"),
                 fieldWithPath("_links.query-events.href").description("self"),
                 fieldWithPath("_links.update-event.href").description("self"),
                 fieldWithPath("name").description("이벤트명"),

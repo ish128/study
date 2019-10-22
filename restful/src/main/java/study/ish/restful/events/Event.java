@@ -53,7 +53,7 @@ public class Event {
     }else
       this.free=false;
 
-    if(this.location!=null && !this.location.isBlank()){
+    if(this.location!=null && this.location.length()!=0){
       this.offline=true;
     }else{
       this.offline=false;
