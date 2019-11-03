@@ -4,12 +4,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.Link;
+import org.springframework.hateoas.LinkBuilder;
+import org.springframework.hateoas.Links;
 import org.springframework.hateoas.MediaTypes;
 
+import org.springframework.hateoas.PagedResources;
+import org.springframework.hateoas.Resource;
 import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -38,7 +48,7 @@ public class EventController {
   public ResponseEntity createEvent(@RequestBody @Valid  EventDto eventDto, Errors errors){
     eventValidator.validate(eventDto, errors);
     if(errors.hasErrors()){
-      return ResponseEntity.badRequest().body(errors);
+      return ResponseEntity.badRequest().body(new ErrorResource(errors));
     }
 
     Event event =  modelMapper.map(eventDto, Event.class);
@@ -75,5 +85,16 @@ public class EventController {
     eventResource.add(linkTo(EventController.class).withRel("query-events"));
 
     return ResponseEntity.ok().body(null);
+  }
+
+  @GetMapping
+  public ResponseEntity queryList(Pageable pageable, PagedResourcesAssembler<Event> assembler){
+
+    Page<Event> page = eventRepository.findAll(pageable);
+    PagedResources<Resource<Event>> pagedResources = assembler.toResource(page, e -> new EventResource(e));
+
+    pagedResources.add(new Link("/docs/index.html#resources-events-list").withRel("profile"));
+
+    return ResponseEntity.ok(pagedResources);
   }
 }
