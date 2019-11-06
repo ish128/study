@@ -2,15 +2,12 @@ package study.ish.restful.events;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
@@ -18,14 +15,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import study.ish.restful.RestfulApplication;
 import study.ish.restful.common.RestDocTestConfiguration;
 import study.ish.restful.common.TaskDescription;
 
 import java.time.LocalDateTime;
 import java.util.stream.IntStream;
 
-
+import static org.springframework.http.HttpHeaders.ACCEPT;
+import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
@@ -33,14 +30,13 @@ import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.li
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.requestBody;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseBody;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,9 +61,9 @@ public class EventControllerSpringMvcTest {
 
   @Test
   @TaskDescription("정상")
-  public void createEvent() throws  Exception{
+  public void createEvent() throws Exception {
 
-    EventDto event  = EventDto.builder()
+    EventDto event = EventDto.builder()
         .name("Spring")
         .description("REST API Development with Spring")
         .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
@@ -82,10 +78,10 @@ public class EventControllerSpringMvcTest {
 
 
     mockMvc.perform(post("/api/events")
-            .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .accept(MediaTypes.HAL_JSON)
-            .content(objectMapper.writeValueAsString(event))
-        )
+        .contentType(MediaType.APPLICATION_JSON_UTF8)
+        .accept(MediaTypes.HAL_JSON)
+        .content(objectMapper.writeValueAsString(event))
+    )
         .andDo(print())
         .andExpect(status().isCreated())
         .andExpect(header().exists("Location"))
@@ -104,11 +100,11 @@ public class EventControllerSpringMvcTest {
                 linkWithRel("profile").description("link to profile"),
                 linkWithRel("query-events").description("link to query events"),
                 linkWithRel("update-event").description("link to update event")
-                ),
+            ),
             requestHeaders(
                 headerWithName(HttpHeaders.ACCEPT).description(HttpHeaders.ACCEPT),
-                headerWithName(HttpHeaders.CONTENT_TYPE).description(HttpHeaders.CONTENT_TYPE)
-                ),
+                headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
+            ),
             requestFields(
                 fieldWithPath("name").description("이벤트명"),
                 fieldWithPath("description").description("이벤트 설명"),
@@ -120,9 +116,9 @@ public class EventControllerSpringMvcTest {
                 fieldWithPath("basePrice").description("기본가"),
                 fieldWithPath("maxPrice").description("최고가"),
                 fieldWithPath("limitOfEnrollment").description("limitOfEnrollment")
-                ),
+            ),
             responseHeaders(
-                headerWithName(HttpHeaders.CONTENT_TYPE).description(HttpHeaders.CONTENT_TYPE)
+                headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
             ),
             responseFields(
                 fieldWithPath("id").description("id"),
@@ -145,15 +141,15 @@ public class EventControllerSpringMvcTest {
                 fieldWithPath("limitOfEnrollment").description("limitOfEnrollment")
             )
 
-            ));
+        ));
 
 
   }
 
   @Test
   @TaskDescription("잘못된 요청")
-  public void createEvent_badRequest() throws  Exception{
-    Event event  = Event.builder()
+  public void createEvent_badRequest() throws Exception {
+    Event event = Event.builder()
         .name("Spring")
         .description("REST API Development with Spring")
         .beginEnrollmentDateTime(LocalDateTime.of(2018, 11, 23, 14, 21))
@@ -183,11 +179,10 @@ public class EventControllerSpringMvcTest {
   }
 
 
-
   @Test
   @TaskDescription("잘못된 요청값")
-  public void createEvent_badRequest_worngInput() throws  Exception{
-    EventDto event  = EventDto.builder()
+  public void createEvent_badRequest_worngInput() throws Exception {
+    EventDto event = EventDto.builder()
         .description("REST API Development with Spring")
         .beginEnrollmentDateTime(LocalDateTime.of(2018, 12, 23, 14, 21))
         .closeEnrollmentDateTime(LocalDateTime.of(2018, 11, 24, 14, 21))
@@ -214,12 +209,12 @@ public class EventControllerSpringMvcTest {
 
   @Test
   @TaskDescription("30개의 테스트 데이타 생성, 10개 사이즈로 2번째 목록 조회")
-  public void queryList_success() throws Exception{
-    IntStream.rangeClosed(1,30).forEach(this::createEvent);
+  public void queryList_success() throws Exception {
+    IntStream.rangeClosed(1, 30).forEach(this::createEvent);
     mockMvc.perform(get("/api/events")
-          .param("page", "1")
-          .param("size", "10")
-          .param("sort","id,ASC")
+        .param("page", "1")
+        .param("size", "10")
+        .param("sort", "id,ASC")
     )
         .andDo(print())
         .andExpect(status().isOk())
@@ -231,7 +226,7 @@ public class EventControllerSpringMvcTest {
         .andExpect(jsonPath("_links.prev").exists())
         .andExpect(jsonPath("_links.self").exists())
         .andExpect(jsonPath("_links.profile").exists())
-        .andDo(document("query-list",
+        .andDo(document("query-events",
             links(
                 linkWithRel("first").description("link to first event of this page"),
                 linkWithRel("last").description("link to last  event of this page"),
@@ -247,7 +242,7 @@ public class EventControllerSpringMvcTest {
             ),
 
             responseHeaders(
-                headerWithName(HttpHeaders.CONTENT_TYPE).description(HttpHeaders.CONTENT_TYPE)
+                headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
             ),
             responseFields(
                 fieldWithPath("_embedded.eventList").description("queried event list"),
@@ -280,12 +275,146 @@ public class EventControllerSpringMvcTest {
         ));
   }
 
-  private void createEvent(int i){
-    Event event = Event.builder()
-       .id(i)
-       .name("event "+i)
-       .build();
 
-   eventRepository.save(event);
+  @Test
+  public void queryOne() throws Exception {
+    Event event = createEvent(100);
+    mockMvc.perform(get("/api/events/{id}", event.getId()))
+        .andDo(print())
+        .andExpect(jsonPath("name").exists())
+        .andExpect(jsonPath("_links.self").exists())
+        .andExpect(jsonPath("_links.profile").exists())
+        .andDo(document("query-event",
+            links(
+                linkWithRel("self").description("link to self page"),
+                linkWithRel("profile").description("link to profile page")
+            ),
+            responseHeaders(
+                headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
+            ),
+            responseFields(
+                fieldWithPath("id").description("id"),
+                fieldWithPath("offline").description("offline"),
+                fieldWithPath("free").description("free"),
+                fieldWithPath("eventStatus").description("eventStatus"),
+                fieldWithPath("_links.self.href").description("self"),
+                fieldWithPath("_links.profile.href").description("profile"),
+                fieldWithPath("name").description("이벤트명"),
+                fieldWithPath("description").description("이벤트 설명"),
+                fieldWithPath("beginEnrollmentDateTime").description("이벤트 등록 시작일"),
+                fieldWithPath("closeEnrollmentDateTime").description("이벤트 등록 마감일"),
+                fieldWithPath("beginEventDateTime").description("이벤트 시작일"),
+                fieldWithPath("endEventDateTime").description("이벤트 종료일"),
+                fieldWithPath("location").description("장소"),
+                fieldWithPath("basePrice").description("기본가"),
+                fieldWithPath("maxPrice").description("최고가"),
+                fieldWithPath("limitOfEnrollment").description("limitOfEnrollment")
+            )
+        ));
+  }
+
+  @Test
+  public void queryOneFailed() throws Exception {
+    mockMvc.perform(get("/api/events/1123213"))
+        .andDo(print())
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("_links.index").exists());
+  }
+
+  @Test
+  public void updateEventSuccessfully() throws Exception {
+    Event event = createEvent(1);
+    String updatedName = "test1";
+
+    EventDto eventDto = EventDto.builder()
+        .name(updatedName)
+        .endEventDateTime(event.getEndEventDateTime())
+        .beginEventDateTime(event.getBeginEventDateTime())
+        .beginEnrollmentDateTime(event.getBeginEnrollmentDateTime())
+        .closeEnrollmentDateTime(event.getCloseEnrollmentDateTime())
+        .build();
+
+    mockMvc.perform(put("/api/events/{id}", event.getId())
+        .contentType(MediaType.APPLICATION_JSON_UTF8)
+        .accept(MediaTypes.HAL_JSON)
+        .content(objectMapper.writeValueAsString(eventDto)))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("name").value(updatedName))
+        .andDo(document("update-event",
+            links(
+                linkWithRel("self").description("link to self page"),
+                linkWithRel("profile").description("link to profile page")
+            ),
+            requestHeaders(
+                headerWithName(CONTENT_TYPE).description(CONTENT_TYPE),
+                headerWithName(ACCEPT).description(ACCEPT)
+            ),
+            requestFields(
+                fieldWithPath("name").description("이벤트명"),
+                fieldWithPath("description").description("이벤트 설명"),
+                fieldWithPath("beginEnrollmentDateTime").description("이벤트 등록 시작일"),
+                fieldWithPath("closeEnrollmentDateTime").description("이벤트 등록 마감일"),
+                fieldWithPath("beginEventDateTime").description("이벤트 시작일"),
+                fieldWithPath("endEventDateTime").description("이벤트 종료일"),
+                fieldWithPath("location").description("장소"),
+                fieldWithPath("basePrice").description("기본가"),
+                fieldWithPath("maxPrice").description("최고가"),
+                fieldWithPath("limitOfEnrollment").description("limitOfEnrollment")
+            ),
+            responseHeaders(
+                headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
+            ),
+            responseFields(
+                fieldWithPath("id").description("id"),
+                fieldWithPath("offline").description("offline"),
+                fieldWithPath("free").description("free"),
+                fieldWithPath("eventStatus").description("eventStatus"),
+                fieldWithPath("_links.self.href").description("self"),
+                fieldWithPath("_links.profile.href").description("profile"),
+                fieldWithPath("name").description("이벤트명"),
+                fieldWithPath("description").description("이벤트 설명"),
+                fieldWithPath("beginEnrollmentDateTime").description("이벤트 등록 시작일"),
+                fieldWithPath("closeEnrollmentDateTime").description("이벤트 등록 마감일"),
+                fieldWithPath("beginEventDateTime").description("이벤트 시작일"),
+                fieldWithPath("endEventDateTime").description("이벤트 종료일"),
+                fieldWithPath("location").description("장소"),
+                fieldWithPath("basePrice").description("기본가"),
+                fieldWithPath("maxPrice").description("최고가"),
+                fieldWithPath("limitOfEnrollment").description("limitOfEnrollment")
+            )
+
+        ));
+  }
+
+  @Test
+  public void updateEvent404() throws Exception {
+    EventDto eventDto = EventDto.builder()
+        .name("ttt")
+        .endEventDateTime(LocalDateTime.now())
+        .beginEventDateTime(LocalDateTime.now().minusYears(1))
+        .beginEnrollmentDateTime(LocalDateTime.now())
+        .closeEnrollmentDateTime(LocalDateTime.now().minusMonths(1))
+        .build();
+
+    mockMvc.perform(put("/api/events/{id}", 100000)
+        .contentType(MediaType.APPLICATION_JSON_UTF8)
+        .accept(MediaTypes.HAL_JSON)
+        .content(objectMapper.writeValueAsString(eventDto)))
+        .andDo(print())
+        .andExpect(status().isNotFound());
+  }
+
+
+  private Event createEvent(int i) {
+    LocalDateTime now = LocalDateTime.now();
+    return eventRepository.save(Event.builder()
+        .id(i)
+        .name("event " + i)
+        .beginEnrollmentDateTime(now.minusMonths(1))
+        .closeEnrollmentDateTime(now)
+        .beginEventDateTime(now.minusYears(1))
+        .endEventDateTime(now)
+        .build());
   }
 }
