@@ -1,21 +1,12 @@
 package study.ish.restful.events;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import study.ish.restful.common.RestDocTestConfiguration;
+import study.ish.restful.common.BaseControllerTest;
 import study.ish.restful.common.TaskDescription;
 
 import java.time.LocalDateTime;
@@ -42,19 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@AutoConfigureMockMvc
-@AutoConfigureRestDocs
-@Import(RestDocTestConfiguration.class)
-@ActiveProfiles("test")
-public class EventControllerSpringMvcTest {
 
-  @Autowired
-  MockMvc mockMvc;
-
-  @Autowired
-  ObjectMapper objectMapper;
+public class EventControllerSpringMvcTest extends BaseControllerTest {
 
   @Autowired
   EventRepository eventRepository;
@@ -77,10 +57,10 @@ public class EventControllerSpringMvcTest {
         .build();
 
 
-    mockMvc.perform(post("/api/events")
+    this.mockMvc.perform(post("/api/events")
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(objectMapper.writeValueAsString(event))
+        .content(this.objectMapper.writeValueAsString(event))
     )
         .andDo(print())
         .andExpect(status().isCreated())
@@ -167,10 +147,10 @@ public class EventControllerSpringMvcTest {
         .build();
 
 
-    mockMvc.perform(post("/api/events")
+    this.mockMvc.perform(post("/api/events")
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(objectMapper.writeValueAsString(event))
+        .content(this.objectMapper.writeValueAsString(event))
     )
         .andDo(print())
         .andExpect(status().isBadRequest());
@@ -194,10 +174,10 @@ public class EventControllerSpringMvcTest {
         .location("강남역 D2 스타텁 팩토리")
         .build();
 
-    mockMvc.perform(post("/api/events")
+    this.mockMvc.perform(post("/api/events")
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(objectMapper.writeValueAsString(event))
+        .content(this.objectMapper.writeValueAsString(event))
     )
         .andDo(print())
         .andExpect(status().isBadRequest())
@@ -211,7 +191,7 @@ public class EventControllerSpringMvcTest {
   @TaskDescription("30개의 테스트 데이타 생성, 10개 사이즈로 2번째 목록 조회")
   public void queryList_success() throws Exception {
     IntStream.rangeClosed(1, 30).forEach(this::createEvent);
-    mockMvc.perform(get("/api/events")
+    this.mockMvc.perform(get("/api/events")
         .param("page", "1")
         .param("size", "10")
         .param("sort", "id,ASC")
@@ -279,7 +259,7 @@ public class EventControllerSpringMvcTest {
   @Test
   public void queryOne() throws Exception {
     Event event = createEvent(100);
-    mockMvc.perform(get("/api/events/{id}", event.getId()))
+    this.mockMvc.perform(get("/api/events/{id}", event.getId()))
         .andDo(print())
         .andExpect(jsonPath("name").exists())
         .andExpect(jsonPath("_links.self").exists())
@@ -315,7 +295,7 @@ public class EventControllerSpringMvcTest {
 
   @Test
   public void queryOneFailed() throws Exception {
-    mockMvc.perform(get("/api/events/1123213"))
+    this.mockMvc.perform(get("/api/events/1123213"))
         .andDo(print())
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("_links.index").exists());
@@ -334,10 +314,10 @@ public class EventControllerSpringMvcTest {
         .closeEnrollmentDateTime(event.getCloseEnrollmentDateTime())
         .build();
 
-    mockMvc.perform(put("/api/events/{id}", event.getId())
+    this.mockMvc.perform(put("/api/events/{id}", event.getId())
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(objectMapper.writeValueAsString(eventDto)))
+        .content(this.objectMapper.writeValueAsString(eventDto)))
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(jsonPath("name").value(updatedName))
@@ -397,10 +377,10 @@ public class EventControllerSpringMvcTest {
         .closeEnrollmentDateTime(LocalDateTime.now().minusMonths(1))
         .build();
 
-    mockMvc.perform(put("/api/events/{id}", 100000)
+    this.mockMvc.perform(put("/api/events/{id}", 100000)
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(objectMapper.writeValueAsString(eventDto)))
+        .content(this.objectMapper.writeValueAsString(eventDto)))
         .andDo(print())
         .andExpect(status().isNotFound());
   }
