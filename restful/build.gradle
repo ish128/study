@@ -7,8 +7,8 @@ plugins {
 
 group = 'study.ish'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+sourceCompatibility = '1.9'
+targetCompatibility = '1.9'
 
 repositories {
     mavenCentral()
@@ -27,7 +27,6 @@ ext {
     snippetsDir = file('build/generated-snippets')
     restDocsVersion = "2.0.2.RELEASE"
 }
-
 
 
 dependencies {
@@ -52,6 +51,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'pl.pragmatists:JUnitParams:1.1.1'
 
+    compile 'org.springframework.security.oauth.boot:spring-security-oauth2-autoconfigure:2.1.0.RELEASE'
+
 }
 
 
@@ -67,7 +68,7 @@ asciidoctor {
 
 bootJar {
     dependsOn asciidoctor
-    from ("${asciidoctor.outputDir}/html5") {
+    from("${asciidoctor.outputDir}/html5") {
         into 'static/docs'
     }
 }

@@ -7,12 +7,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import study.ish.restful.accounts.Account;
 
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import java.time.LocalDateTime;
 
 @Builder
@@ -44,19 +46,23 @@ public class Event {
   @Builder.Default
   private EventStatus eventStatus = EventStatus.DRAFT;
 
+  @ManyToOne
+  private Account manager;
+
 
   public void update() {
-    if (this.basePrice == 0 && this.maxPrice == 0) {
-      this.free = true;
-    } else
-      this.free = false;
-
-    if (this.location != null
-        && this.location.length() != 0
-        && this.location.trim().length() != 0) {
-      this.offline = true;
+    if (basePrice == 0 && maxPrice == 0) {
+      free = true;
     } else {
-      this.offline = false;
+      free = false;
+    }
+
+    if (location != null
+        && location.length() != 0
+        && location.trim().length() != 0) {
+      offline = true;
+    } else {
+      offline = false;
     }
   }
 

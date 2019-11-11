@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class IndexControllerTest extends BaseControllerTest {
 
-
   @Test
   public void index() throws Exception {
     mockMvc.perform(get("/api"))
