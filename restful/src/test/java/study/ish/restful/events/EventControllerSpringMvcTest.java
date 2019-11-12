@@ -1,15 +1,22 @@
 package study.ish.restful.events;
 
 
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.common.util.Jackson2JsonParser;
+import study.ish.restful.accounts.Account;
+import study.ish.restful.accounts.AccountRepository;
+import study.ish.restful.accounts.AccountRole;
+import study.ish.restful.accounts.AccountService;
 import study.ish.restful.common.BaseControllerTest;
 import study.ish.restful.common.TaskDescription;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.springframework.http.HttpHeaders.ACCEPT;
@@ -21,10 +28,11 @@ import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.li
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.relaxedResponseFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -38,6 +46,50 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
 
   @Autowired
   EventRepository eventRepository;
+
+  @Autowired
+  AccountService accountService;
+
+  @Autowired
+  AccountRepository accountRepository;
+
+  String clientId = "myApp";
+  String clinetSecret = "pass";
+
+  String username = "popqpq";
+  String password = "test128";
+
+  @Before
+  public void init() {
+    accountRepository.deleteAll();
+
+    Account account = Account.builder()
+        .email(username)
+        .password(password)
+        .roles(Set.of(AccountRole.USER))
+        .build();
+    accountService.saveAccount(account);
+  }
+
+  private String getAuthToken() throws Exception {
+    String response =
+        mockMvc.perform(post("/oauth/token")
+            .with(httpBasic(clientId, clinetSecret))
+            .param("username", username)
+            .param("password", password)
+            .param("grant_type", "password"))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+
+    Jackson2JsonParser parser = new Jackson2JsonParser();
+    return parser.parseMap(response).get("access_token").toString();
+
+  }
+
+  private String getBearerToken() throws Exception {
+    return "Bearer " + getAuthToken();
+  }
 
   @Test
   @TaskDescription("정상")
@@ -57,10 +109,11 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
         .build();
 
 
-    this.mockMvc.perform(post("/api/events")
+    mockMvc.perform(post("/api/events")
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(this.objectMapper.writeValueAsString(event))
+        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+        .content(objectMapper.writeValueAsString(event))
     )
         .andDo(print())
         .andExpect(status().isCreated())
@@ -100,7 +153,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
             responseHeaders(
                 headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
             ),
-            responseFields(
+            relaxedResponseFields(
                 fieldWithPath("id").description("id"),
                 fieldWithPath("offline").description("offline"),
                 fieldWithPath("free").description("free"),
@@ -147,10 +200,11 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
         .build();
 
 
-    this.mockMvc.perform(post("/api/events")
+    mockMvc.perform(post("/api/events")
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(this.objectMapper.writeValueAsString(event))
+        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+        .content(objectMapper.writeValueAsString(event))
     )
         .andDo(print())
         .andExpect(status().isBadRequest());
@@ -174,10 +228,11 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
         .location("강남역 D2 스타텁 팩토리")
         .build();
 
-    this.mockMvc.perform(post("/api/events")
+    mockMvc.perform(post("/api/events")
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(this.objectMapper.writeValueAsString(event))
+        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+        .content(objectMapper.writeValueAsString(event))
     )
         .andDo(print())
         .andExpect(status().isBadRequest())
@@ -191,7 +246,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
   @TaskDescription("30개의 테스트 데이타 생성, 10개 사이즈로 2번째 목록 조회")
   public void queryList_success() throws Exception {
     IntStream.rangeClosed(1, 30).forEach(this::createEvent);
-    this.mockMvc.perform(get("/api/events")
+    mockMvc.perform(get("/api/events")
         .param("page", "1")
         .param("size", "10")
         .param("sort", "id,ASC")
@@ -224,7 +279,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
             responseHeaders(
                 headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
             ),
-            responseFields(
+            relaxedResponseFields(
                 fieldWithPath("_embedded.eventList").description("queried event list"),
                 fieldWithPath("_embedded.eventList[].id").description("id"),
                 fieldWithPath("_embedded.eventList[].offline").description("offline"),
@@ -259,7 +314,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
   @Test
   public void queryOne() throws Exception {
     Event event = createEvent(100);
-    this.mockMvc.perform(get("/api/events/{id}", event.getId()))
+    mockMvc.perform(get("/api/events/{id}", event.getId()))
         .andDo(print())
         .andExpect(jsonPath("name").exists())
         .andExpect(jsonPath("_links.self").exists())
@@ -272,7 +327,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
             responseHeaders(
                 headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
             ),
-            responseFields(
+            relaxedResponseFields(
                 fieldWithPath("id").description("id"),
                 fieldWithPath("offline").description("offline"),
                 fieldWithPath("free").description("free"),
@@ -295,7 +350,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
 
   @Test
   public void queryOneFailed() throws Exception {
-    this.mockMvc.perform(get("/api/events/1123213"))
+    mockMvc.perform(get("/api/events/1123213"))
         .andDo(print())
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("_links.index").exists());
@@ -314,10 +369,11 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
         .closeEnrollmentDateTime(event.getCloseEnrollmentDateTime())
         .build();
 
-    this.mockMvc.perform(put("/api/events/{id}", event.getId())
+    mockMvc.perform(put("/api/events/{id}", event.getId())
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(this.objectMapper.writeValueAsString(eventDto)))
+        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+        .content(objectMapper.writeValueAsString(eventDto)))
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(jsonPath("name").value(updatedName))
@@ -345,7 +401,7 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
             responseHeaders(
                 headerWithName(CONTENT_TYPE).description(CONTENT_TYPE)
             ),
-            responseFields(
+            relaxedResponseFields(
                 fieldWithPath("id").description("id"),
                 fieldWithPath("offline").description("offline"),
                 fieldWithPath("free").description("free"),
@@ -377,10 +433,11 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
         .closeEnrollmentDateTime(LocalDateTime.now().minusMonths(1))
         .build();
 
-    this.mockMvc.perform(put("/api/events/{id}", 100000)
+    mockMvc.perform(put("/api/events/{id}", 100000)
         .contentType(MediaType.APPLICATION_JSON_UTF8)
         .accept(MediaTypes.HAL_JSON)
-        .content(this.objectMapper.writeValueAsString(eventDto)))
+        .header(HttpHeaders.AUTHORIZATION, getBearerToken())
+        .content(objectMapper.writeValueAsString(eventDto)))
         .andDo(print())
         .andExpect(status().isNotFound());
   }
