@@ -9,9 +9,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.Set;
+import study.ish.restful.common.AppProperties;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -20,6 +20,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@ActiveProfiles("test")
 public class AccountServiceTest {
 
   @Rule
@@ -31,20 +32,16 @@ public class AccountServiceTest {
   @Autowired
   private PasswordEncoder passwordEncoder;
 
+  @Autowired
+  private AppProperties appProperties;
+
 
   @Test
   public void findUserByUsername() {
-    String password = "test";
-    Account account = Account.builder()
-        .email("test@hh.hh")
-        .password(password)
-        .roles(Set.of(AccountRole.ADMIN, AccountRole.USER))
-        .build();
-    accountService.saveAccount(account);
 
-    UserDetails userDetails = accountService.loadUserByUsername(account.getEmail());
+    UserDetails userDetails = accountService.loadUserByUsername(appProperties.getUserName());
 
-    assertThat(passwordEncoder.matches(password, userDetails.getPassword()), is(true));
+    assertThat(passwordEncoder.matches(appProperties.getUserPassword(), userDetails.getPassword()), is(true));
 
 
   }

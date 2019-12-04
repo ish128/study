@@ -11,26 +11,40 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import study.ish.restful.accounts.Account;
 import study.ish.restful.accounts.AccountRole;
 import study.ish.restful.accounts.AccountService;
+import study.ish.restful.common.AppProperties;
 
 import java.util.Set;
 
 @Configuration
 public class AppConfig {
+
+
   @Bean
-  static ApplicationRunner applicationRunner() {
+  public ApplicationRunner applicationRunner() {
     return new ApplicationRunner() {
 
       @Autowired
       private AccountService accountService;
 
+      @Autowired
+      private AppProperties appProperties;
+
       @Override
       public void run(ApplicationArguments args) throws Exception {
-        Account account = Account.builder()
-            .email("ish128@naver.com")
-            .password("test111")
+        Account user = Account.builder()
+            .email(appProperties.getUserName())
+            .password(appProperties.getUserPassword())
+            .roles(Set.of(AccountRole.USER))
+            .build();
+
+        Account admin = Account.builder()
+            .email(appProperties.getAdminName())
+            .password(appProperties.getAdminPassword())
             .roles(Set.of(AccountRole.USER, AccountRole.ADMIN))
             .build();
-        accountService.saveAccount(account);
+
+        accountService.saveAccount(user);
+        accountService.saveAccount(admin);
       }
     };
   }

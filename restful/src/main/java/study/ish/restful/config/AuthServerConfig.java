@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import study.ish.restful.accounts.AccountService;
+import study.ish.restful.common.AppProperties;
 
 @Configuration
 @EnableAuthorizationServer
@@ -27,6 +28,9 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
   @Autowired
   private TokenStore tokenStore;
 
+  @Autowired
+  private AppProperties appProperties;
+
   @Override
   public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
     security.passwordEncoder(passwordEncoder);
@@ -36,10 +40,10 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
   public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
     //client  설정
     clients.inMemory()
-        .withClient("myApp")
+        .withClient(appProperties.getClientId())
         .authorizedGrantTypes("password", "refresh_token")
         .scopes("read", "write")
-        .secret(passwordEncoder.encode("pass"))
+        .secret(passwordEncoder.encode(appProperties.getClientSecret()))
         .accessTokenValiditySeconds(10 * 60)
         .refreshTokenValiditySeconds(6 * 10 * 60);
   }

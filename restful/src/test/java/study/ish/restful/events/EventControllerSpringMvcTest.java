@@ -12,6 +12,7 @@ import study.ish.restful.accounts.Account;
 import study.ish.restful.accounts.AccountRepository;
 import study.ish.restful.accounts.AccountRole;
 import study.ish.restful.accounts.AccountService;
+import study.ish.restful.common.AppProperties;
 import study.ish.restful.common.BaseControllerTest;
 import study.ish.restful.common.TaskDescription;
 
@@ -53,15 +54,23 @@ public class EventControllerSpringMvcTest extends BaseControllerTest {
   @Autowired
   AccountRepository accountRepository;
 
-  String clientId = "myApp";
-  String clinetSecret = "pass";
+  @Autowired
+  AppProperties appProperties;
 
-  String username = "popqpq";
-  String password = "test128";
+  String clientId;
+  String clinetSecret;
+
+  String username;
+  String password;
 
   @Before
   public void init() {
     accountRepository.deleteAll();
+
+    clientId = appProperties.getClientId();
+    clinetSecret = appProperties.getClientSecret();
+    username = appProperties.getUserName();
+    password = appProperties.getUserPassword();
 
     Account account = Account.builder()
         .email(username)
