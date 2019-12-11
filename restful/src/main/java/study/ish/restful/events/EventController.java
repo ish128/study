@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import study.ish.restful.accounts.Account;
+import study.ish.restful.accounts.CurrentUser;
 import study.ish.restful.common.ErrorResource;
 import study.ish.restful.common.StudyException;
 
@@ -27,6 +29,7 @@ import javax.validation.Valid;
 import java.net.URI;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 import static study.ish.restful.common.ErrorType.BAD_REQUEST_DATA;
 import static study.ish.restful.common.ErrorType.NOT_FOUND_DATA;
 
@@ -43,7 +46,8 @@ public class EventController {
   private final EventValidator eventValidator;
 
   @PostMapping
-  public ResponseEntity createEvent(@RequestBody @Valid EventDto eventDto, Errors errors) {
+  public ResponseEntity createEvent(@RequestBody @Valid EventDto eventDto, Errors errors,
+                                    @CurrentUser Account account) {
     eventValidator.validate(eventDto, errors);
     if (errors.hasErrors()) {
       return ResponseEntity.badRequest().body(new ErrorResource(errors));
@@ -51,6 +55,7 @@ public class EventController {
 
     Event event = modelMapper.map(eventDto, Event.class);
     event.update();
+    event.setManager(account);
 
     Event newEvent = eventRepository.save(event);
 
@@ -86,28 +91,45 @@ public class EventController {
   }*/
 
   @GetMapping
-  public ResponseEntity queryList(Pageable pageable, PagedResourcesAssembler<Event> assembler) {
+  public ResponseEntity queryList(Pageable pageable, PagedResourcesAssembler<Event> assembler,
+                                  @CurrentUser Account account) {
 
     Page<Event> page = eventRepository.findAll(pageable);
     PagedResources<Resource<Event>> pagedResources = assembler.toResource(page, e -> new EventResource(e));
 
     pagedResources.add(new Link("/docs/index.html#resources-query-events").withRel("profile"));
 
+    if (account != null) {
+      pagedResources.add(linkTo(EventController.class).withRel("create-event"));
+    }
+
     return ResponseEntity.ok(pagedResources);
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<EventResource> queryOne(@PathVariable int id) {
+  public ResponseEntity<EventResource> queryOne(@PathVariable int id,
+                                                @CurrentUser Account account) {
+
+
     Event event = eventRepository.findById(id).orElseThrow(() -> new StudyException(NOT_FOUND_DATA));
     EventResource eventResource = new EventResource(event);
     eventResource.add(new Link("/docs/index.html#resources-query-event").withRel("profile"));
+
+
+    if (account != null
+        && event.getManager().getEmail().equals(account.getEmail())) {
+
+      eventResource.add(linkTo(EventController.class).slash(id).withRel("update-event"));
+
+    }
     return ResponseEntity.ok(eventResource);
   }
 
   @PutMapping("/{id}")
   public ResponseEntity updateEvent(@RequestBody @Valid EventDto eventDto,
                                     Errors errors,
-                                    @PathVariable int id) {
+                                    @PathVariable int id,
+                                    @CurrentUser Account account) {
 
     eventValidator.validate(eventDto, errors);
     if (errors.hasErrors()) {
@@ -115,6 +137,10 @@ public class EventController {
     }
     Event event = eventRepository.findById(id)
         .orElseThrow(() -> new StudyException(NOT_FOUND_DATA));
+
+    if (!event.getManager().equals(account)) {
+      return new ResponseEntity(UNAUTHORIZED);
+    }
 
     modelMapper.map(eventDto, event);
     eventRepository.save(event);

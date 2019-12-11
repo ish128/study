@@ -1,6 +1,7 @@
 package study.ish.restful.events;
 
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -8,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import study.ish.restful.accounts.Account;
+import study.ish.restful.accounts.AccountSerializer;
 
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -47,6 +49,7 @@ public class Event {
   private EventStatus eventStatus = EventStatus.DRAFT;
 
   @ManyToOne
+  @JsonSerialize(using = AccountSerializer.class)
   private Account manager;
 
 
